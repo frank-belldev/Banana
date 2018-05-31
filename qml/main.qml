@@ -34,7 +34,7 @@ ApplicationWindow {
             font.pointSize: 16
             width: 300
             text: "<b>Banana Downloader</b>"
-            color: Qt.lighter("yellow")
+            color: "moccasin"
             horizontalAlignment: TextInput.AlignHCenter
         }
         Rectangle {
@@ -47,7 +47,7 @@ ApplicationWindow {
             Label {
                 font.pointSize: 12
                 text: "Source path to download :"
-                color: Qt.lighter("yellow")
+                color: "moccasin"
             }
             TextField {
                 id: cURL
@@ -63,7 +63,7 @@ ApplicationWindow {
             Label {
                 font.pointSize: 12
                 text: "Target path to download :"
-                color: Qt.lighter("yellow")
+                color: "moccasin"
             }
             TextField {
                 id: directory
@@ -79,7 +79,7 @@ ApplicationWindow {
             Label {
                 font.pointSize: 12
                 text: "File name:"
-                color: Qt.lighter("yellow")
+                color: "moccasin"
             }
             TextField {
                 id: file
@@ -100,7 +100,7 @@ ApplicationWindow {
 
                 font.pointSize: 12
                 text: "Overwrite existing file"
-                color: Qt.lighter("yellow")
+                color: "moccasin"
             }
 
             Switch {
@@ -114,10 +114,13 @@ ApplicationWindow {
 
         Column {
             visible: downloader.loading
+            spacing: 5
             Label {
+                width: 300
                 font.pointSize: 12
-                text: qsTr("%1\% Copied").arg(downloader.progress*100);
-                color: Qt.lighter("yellow")
+                text: qsTr("%1\% Copied").arg(Math.floor(downloader.progress*100));
+                color: "moccasin"
+                horizontalAlignment: Text.AlignHCenter
             }
             ProgressBar {
                 implicitWidth: 300
@@ -141,10 +144,66 @@ ApplicationWindow {
                 text: "Cancel"
                 onClicked: downloader.cancelDownload()
             }
-            Button {
-                visible: !downloader.loading
-                text: "View"
+        }
+    }
+
+    Popup {
+        id: messageBox
+        x: (parent.width - width) / 2
+        y: (parent.height - height) / 2
+        width: 320
+        height: 240
+        modal: true
+        focus: true
+        closePolicy: Popup.OnEscape | Popup.OnPressOutside
+        padding: 20
+        Item {
+            anchors.fill: parent
+            Column {
+                anchors.fill: parent
+                spacing: 10
+                Label {
+                    id: msgTitle
+                    width: msgBoxSeparator.width
+                    wrapMode: Text.WrapAnywhere
+                    font.pointSize: 16
+                    color: "tomato"
+                    font.bold: true
+                    horizontalAlignment: TextInput.AlignHCenter
+                }
+                Rectangle {
+                    id: msgBoxSeparator
+                    height: 2
+                    width: messageBox.width - messageBox.leftPadding * 2
+                    color: "#0FFFFFFF"
+                }
+                Label {
+                    id: msgDetail
+                    width: msgBoxSeparator.width
+                    wrapMode: Text.WordWrap
+                    font.pointSize: 12
+                    color: "tomato"
+                    font.bold: true
+                }
             }
         }
+    }
+
+    function showMsg(title, detail)
+    {
+        console.log(title, detail);
+        msgTitle.text = title;
+        msgDetail.text = detail;
+        messageBox.open();
+    }
+
+    function setDetail(detail)
+    {
+        console.log(detail);
+    }
+
+    Component.onCompleted: {
+        downloader.sendMsg.connect(showMsg);
+        downloader.sendDetail.connect(setDetail);
     }
 }

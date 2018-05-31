@@ -17,7 +17,8 @@ DownloadManager::DownloadManager(QObject *parent) : QObject(parent)
 
 QString DownloadManager::defaultUrl()
 {
-    return tr("https://www.google.com/");
+    //return tr("https://www.google.com/");
+    return tr("https://cmake.org/files/v3.10/cmake-3.10.3-win32-x86.msi");
 }
 
 QString DownloadManager::defaultDir()
@@ -110,6 +111,8 @@ void DownloadManager::startRequest(const QUrl& url)
 
 void DownloadManager::downloadFile()
 {
+    setProgress(0);
+
     const QUrl newUrl = QUrl::fromUserInput(m_szUrl);
     if (!newUrl.isValid()) {
         sendMsg(tr("Error"), tr("Invalid URL: %1: %2").arg(m_szUrl, newUrl.errorString()));
@@ -187,35 +190,12 @@ void DownloadManager::httpFinished()
         m_qReply = Q_NULLPTR;
         return;
     }
-
-    const QVariant redirectionTarget = m_qReply->attribute(QNetworkRequest::RedirectionTargetAttribute);
-
-    m_qReply->deleteLater();
-    m_qReply = Q_NULLPTR;
-
-    if (!redirectionTarget.isNull()) {
-        const QUrl redirectedUrl = QUrl(m_szUrl).resolved(redirectionTarget.toUrl());
-        /*if (QMessageBox::question(this, tr("Redirect"),
-                                  tr("Redirect to %1 ?").arg(redirectedUrl.toString()),
-                                  QMessageBox::Yes | QMessageBox::No) == QMessageBox::No) {
-            downloadButton->setEnabled(true);
-            return;
-        }*/
-        m_qFile = openFileForWrite(fi.absoluteFilePath());
-        if (!m_qFile) {
-            setLoading(false);
-            return;
-        }
-        startRequest(redirectedUrl);
-        return;
-    }
-/*
+    /*
     statusLabel->setText(tr("Downloaded %1 bytes to %2\nin\n%3")
-                         .arg(fi.size()).arg(fi.fileName(), QDir::toNativeSeparators(fi.absolutePath())));
-    if (launchCheckBox->isChecked())
-        QDesktopServices::openUrl(QUrl::fromLocalFile(fi.absoluteFilePath()));*/
+                         .arg(fi.size()).arg(fi.fileName(), QDir::toNativeSeparators(fi.absolutePath())));*/
+    //if (launchCheckBox->isChecked())
+    QDesktopServices::openUrl(QUrl::fromLocalFile(fi.absoluteFilePath()));
     setLoading(false);
-    //downloadButton->setEnabled(true);
 }
 
 void DownloadManager::httpReadyRead()
@@ -255,11 +235,8 @@ void DownloadManager::sslErrors(QNetworkReply*,const QList<QSslError> &errors)
             errorString += '\n';
         errorString += error.errorString();
     }
-/*
-    if (QMessageBox::warning(this, tr("SSL Errors"),
-                             tr("One or more SSL errors has occurred:\n%1").arg(errorString),
-                             QMessageBox::Ignore | QMessageBox::Abort) == QMessageBox::Ignore) {
-        m_qReply->ignoreSslErrors();
-    }*/
+    sendMsg(tr("SSL Errors"),
+            tr("One or more SSL errors has occurred:\n%1").arg(errorString));
+    //    m_qReply->ignoreSslErrors();
 }
 #endif

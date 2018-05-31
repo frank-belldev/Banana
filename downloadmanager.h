@@ -1,6 +1,7 @@
 #ifndef DOWNLOADMANAGER_H
 #define DOWNLOADMANAGER_H
 
+#include <QtGui>
 #include <QtCore>
 #include <QObject>
 #include <QtNetwork>
@@ -34,6 +35,7 @@ private:
     QFile *openFileForWrite(const QString &fileName);
 
 signals:
+    void sendDetail(QString);
     void sendMsg(QString, QString);
 
     void urlChanged();
