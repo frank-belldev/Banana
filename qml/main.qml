@@ -27,13 +27,14 @@ ApplicationWindow {
         anchors.centerIn: parent
         id: grid
         padding: 5
-        spacing: 20
+        spacing: 15
 
         anchors.horizontalCenter: parent.horizontalCenter
         Label {
             font.pointSize: 16
             width: 300
             text: "<b>Banana Downloader</b>"
+            color: Qt.lighter("yellow")
             horizontalAlignment: TextInput.AlignHCenter
         }
         Rectangle {
@@ -46,9 +47,12 @@ ApplicationWindow {
             Label {
                 font.pointSize: 12
                 text: "Source path to download :"
+                color: Qt.lighter("yellow")
             }
             TextField {
                 id: cURL
+                text: downloader.defaultUrl()
+                enabled: !downloader.loading
                 font.pointSize: 12
                 implicitWidth: 300
                 placeholderText: qsTr("Enter source URL")
@@ -59,9 +63,12 @@ ApplicationWindow {
             Label {
                 font.pointSize: 12
                 text: "Target path to download :"
+                color: Qt.lighter("yellow")
             }
             TextField {
                 id: directory
+                text: downloader.defaultDir()
+                enabled: !downloader.loading
                 font.pointSize: 12
                 implicitWidth: 300
                 placeholderText: qsTr("Enter target URL")
@@ -71,13 +78,36 @@ ApplicationWindow {
         Column {
             Label {
                 font.pointSize: 12
-                text: "File name..."
+                text: "File name:"
+                color: Qt.lighter("yellow")
             }
             TextField {
                 id: file
+                text: downloader.defaultFile()
+                enabled: !downloader.loading
                 font.pointSize: 12
                 implicitWidth: 300
                 placeholderText: qsTr("Enter file name")
+            }
+        }
+
+        Item {
+            width: 300
+            height: overwrite.height
+            Label {
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+
+                font.pointSize: 12
+                text: "Overwrite existing file"
+                color: Qt.lighter("yellow")
+            }
+
+            Switch {
+                id: overwrite
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.right: parent.right
+                onCheckedChanged: downloader.setOverwrite(checked)
             }
         }
 
@@ -85,21 +115,24 @@ ApplicationWindow {
         Column {
             visible: downloader.loading
             Label {
+                font.pointSize: 12
                 text: qsTr("%1\% Copied").arg(downloader.progress*100);
+                color: Qt.lighter("yellow")
             }
             ProgressBar {
                 implicitWidth: 300
                 id: downloadProgress
-                value: downloader.progress + 0.2
+                value: downloader.progress
             }
         }
+
         Row {
             width: 300
             spacing: 10
             layoutDirection: Qt.RightToLeft
             Button {
                 visible: !downloader.loading
-                enabled: cURL.length
+                enabled: cURL.length && directory.length && file.length
                 text: "Start"
                 onClicked: downloader.downloadFile()
             }

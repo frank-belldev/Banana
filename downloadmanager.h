@@ -27,13 +27,15 @@ private:
     QNetworkAccessManager m_qNAM;
     QNetworkReply *m_qReply;
     QFile *m_qFile;
-    bool httpRequestAborted;
+    bool m_bOverwrite;
+    bool m_bHttpRequestAborted;
 
 private:
     QFile *openFileForWrite(const QString &fileName);
 
 signals:
-    void statusChanged(QString);
+    void sendMsg(QString, QString);
+
     void urlChanged();
     void dirChanged();
     void fileChanged();
@@ -41,6 +43,10 @@ signals:
     void loadingChanged();
 
 public slots:
+    void setOverwrite(bool newOV) { m_bOverwrite = newOV; }
+    QString defaultUrl();
+    QString defaultDir();
+    QString defaultFile();
     void downloadFile();
     void cancelDownload();
     void httpFinished();

@@ -2,7 +2,9 @@
 
 DownloadManager::DownloadManager(QObject *parent) : QObject(parent)
 {
+    m_bOverwrite = false;
     m_rProgressValue = 0;
+
     m_bLoading = false;
 
     connect(&m_qNAM, &QNetworkAccessManager::authenticationRequired,
@@ -11,6 +13,24 @@ DownloadManager::DownloadManager(QObject *parent) : QObject(parent)
     connect(&m_qNAM, &QNetworkAccessManager::sslErrors,
             this, &DownloadManager::sslErrors);
 #endif
+}
+
+QString DownloadManager::defaultUrl()
+{
+    return tr("https://www.google.com/");
+}
+
+QString DownloadManager::defaultDir()
+{
+    QString downloadDirectory = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+    if (downloadDirectory.isEmpty() || !QFileInfo(downloadDirectory).isDir())
+        downloadDirectory = QDir::currentPath();
+    return downloadDirectory;
+}
+
+QString DownloadManager::defaultFile()
+{
+    return tr("download.tmp");
 }
 
 QString DownloadManager::url()
@@ -70,14 +90,17 @@ void DownloadManager::setLoading(bool newLoadingState)
 
 void DownloadManager::startRequest(const QUrl& url)
 {
-    httpRequestAborted = false;
-
     m_qReply = m_qNAM.get(QNetworkRequest(url));
     connect(m_qReply, &QNetworkReply::finished, this, &DownloadManager::httpFinished);
     connect(m_qReply, &QIODevice::readyRead, this, &DownloadManager::httpReadyRead);
 
     //connect(progressDialog, &QProgressDialog::canceled, this, &DownloadManager::cancelDownload);
     connect(m_qReply, &QNetworkReply::downloadProgress, this, [=] (qint64 bytesReceived, qint64 bytesTotal) {
+        if (bytesTotal <= 0)
+        {
+            setProgress(0);
+            return;
+        }
         setProgress(bytesReceived * 0.1 / bytesTotal);
     });
     connect(m_qReply, &QNetworkReply::finished, this, &DownloadManager::cancelDownload);
@@ -89,30 +112,31 @@ void DownloadManager::downloadFile()
 {
     const QUrl newUrl = QUrl::fromUserInput(m_szUrl);
     if (!newUrl.isValid()) {
-        /*QMessageBox::information(this, tr("Error"),
-                                 tr("Invalid URL: %1: %2").arg(urlSpec, newUrl.errorString()));*/
+        sendMsg(tr("Error"), tr("Invalid URL: %1: %2").arg(m_szUrl, newUrl.errorString()));
         return;
     }
 
     QString fileName = m_szFile;
-    if (fileName.isEmpty())
-        return;
     QString downloadDirectory = m_szDir;
     if (!downloadDirectory.isEmpty() && QFileInfo(downloadDirectory).isDir())
         fileName.prepend(downloadDirectory + '/');
+    qDebug() << m_bOverwrite;
     if (QFile::exists(fileName)) {
-        /*if (QMessageBox::question(this, tr("Overwrite Existing File"),
-                                  tr("There already exists a file called %1 in "
-                                     "the current directory. Overwrite?").arg(fileName),
-                                  QMessageBox::Yes|QMessageBox::No, QMessageBox::No)
-            == QMessageBox::No)
-            return;*/
-        QFile::remove(fileName);
+        if (m_bOverwrite)
+            QFile::remove(fileName);
+        else
+        {
+            sendMsg(tr("Error"), tr("%1 already exists.").arg(fileName));
+            return;
+        }
     }
 
     m_qFile = openFileForWrite(fileName);
     if (!m_qFile)
+    {
+        sendMsg(tr("Error"), tr("Can not open file"));
         return;
+    }
 
     setLoading(true);
 
@@ -124,11 +148,10 @@ QFile* DownloadManager::openFileForWrite(const QString &fileName)
 {
     QScopedPointer<QFile> file(new QFile(fileName));
     if (!file->open(QIODevice::WriteOnly)) {
-        /*QMessageBox::information(this, tr("Error"),
-                                 tr("Unable to save the file %1: %2.")
-                                 .arg(QDir::toNativeSeparators(fileName),
-                                      file->errorString()));
-        return Q_NULLPTR;*/
+        sendMsg(tr("Error"),
+                tr("Unable to save the file %1: %2.").arg(QDir::toNativeSeparators(fileName),
+                file->errorString()));
+        return Q_NULLPTR;
     }
     return file.take();
 }
@@ -136,9 +159,8 @@ QFile* DownloadManager::openFileForWrite(const QString &fileName)
 void DownloadManager::cancelDownload()
 {
     //statusLabel->setText(tr("Download canceled."));
-    httpRequestAborted = true;
-    m_qReply->abort();
-    //downloadButton->setEnabled(true);
+    setLoading(false);
+    delete m_qReply;
 }
 
 void DownloadManager::httpFinished()
@@ -151,7 +173,7 @@ void DownloadManager::httpFinished()
         m_qFile = Q_NULLPTR;
     }
 
-    if (httpRequestAborted) {
+    if (!m_bLoading) {
         m_qReply->deleteLater();
         m_qReply = Q_NULLPTR;
         return;
@@ -159,7 +181,7 @@ void DownloadManager::httpFinished()
 
     if (m_qReply->error()) {
         QFile::remove(fi.absoluteFilePath());
-        //statusLabel->setText(tr("Download failed:\n%1.").arg(reply->errorString()));
+        sendMsg("Download failed!.", m_qReply->errorString());
         setLoading(false);
         m_qReply->deleteLater();
         m_qReply = Q_NULLPTR;
@@ -203,7 +225,8 @@ void DownloadManager::httpReadyRead()
 }
 
 void DownloadManager::slotAuthenticationRequired(QNetworkReply*,QAuthenticator *)
-{/*
+{
+    /*
     QDialog authenticationDialog;
     Ui::Dialog ui;
     ui.setupUi(&authenticationDialog);
