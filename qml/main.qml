@@ -18,16 +18,16 @@ ApplicationWindow {
 
     DownloadManager {
         id: downloader
-        name: userName.text
-        password: userPassword.text
         url: cURL.text
+        dir: directory.text
+        file: file.text
     }
 
     Column {
         anchors.centerIn: parent
         id: grid
         padding: 5
-        spacing: 10
+        spacing: 20
 
         anchors.horizontalCenter: parent.horizontalCenter
         Label {
@@ -39,59 +39,78 @@ ApplicationWindow {
         Rectangle {
             width: 300
             height: 2
-            color: "#07FFFFFF"
+            color: "#0FFFFFFF"
         }
 
-        Label {
-            font.pointSize: 12
-            text: "Your Name :"
+        Column {
+            Label {
+                font.pointSize: 12
+                text: "Source path to download :"
+            }
+            TextField {
+                id: cURL
+                font.pointSize: 12
+                implicitWidth: 300
+                placeholderText: qsTr("Enter source URL")
+            }
         }
-        TextField {
-            id: userName
-            font.pointSize: 12
-            implicitWidth: 300
-            placeholderText: qsTr("Enter name")
+
+        Column {
+            Label {
+                font.pointSize: 12
+                text: "Target path to download :"
+            }
+            TextField {
+                id: directory
+                font.pointSize: 12
+                implicitWidth: 300
+                placeholderText: qsTr("Enter target URL")
+            }
         }
-        Label {
-            font.pointSize: 12
-            text: "Your Password :"
+
+        Column {
+            Label {
+                font.pointSize: 12
+                text: "File name..."
+            }
+            TextField {
+                id: file
+                font.pointSize: 12
+                implicitWidth: 300
+                placeholderText: qsTr("Enter file name")
+            }
         }
-        TextField {
-            id: userPassword
-            font.pointSize: 12
-            implicitWidth: 300
-            placeholderText: qsTr("Enter your password")
-        }
-        Label {
-            font.pointSize: 12
-            text: "Url to download :"
-        }
-        TextField {
-            id: cURL
-            font.pointSize: 12
-            implicitWidth: 300
-            placeholderText: qsTr("Enter client URL")
-        }
-        Label {
+
+
+        Column {
             visible: downloader.loading
-            text: qsTr("%1\% Copied").arg(downloader.progress*100);
-        }
-        ProgressBar {
-            visible: downloader.loading
-            implicitWidth: 300
-            id: downloadProgress
-            value: downloader.progress + 0.2
+            Label {
+                text: qsTr("%1\% Copied").arg(downloader.progress*100);
+            }
+            ProgressBar {
+                implicitWidth: 300
+                id: downloadProgress
+                value: downloader.progress + 0.2
+            }
         }
         Row {
             width: 300
+            spacing: 10
             layoutDirection: Qt.RightToLeft
             Button {
                 visible: !downloader.loading
+                enabled: cURL.length
                 text: "Start"
+                onClicked: downloader.downloadFile()
             }
             Button {
                 visible: downloader.loading
                 text: "Cancel"
+                onClicked: downloader.cancelDownload()
+            }
+            Button {
+                visible: !downloader.loading
+                text: "View"
             }
         }
     }
